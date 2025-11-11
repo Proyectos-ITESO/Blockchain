@@ -1,0 +1,7 @@
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "env": {
+    "VITE_API_URL": "@encrypted_messaging_api_url",
+    "VITE_WS_URL": "@encrypted_messaging_ws_url"
+  }
+}
