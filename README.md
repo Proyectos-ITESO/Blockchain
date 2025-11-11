@@ -6,37 +6,29 @@ MVP de un sistema de mensajería encriptada de extremo a extremo (E2EE) con nota
 
 ```
 Blockchain/
-├── app/
-│   ├── api/
-│   │   └── endpoints/          # Endpoints de la API REST
-│   │       ├── auth.py         # Autenticación (registro, login)
-│   │       ├── chat.py         # API de chat (contactos, historial)
-│   │       ├── websocket.py    # WebSocket para mensajería en tiempo real
-│   │       └── verification.py # Verificación de mensajes en blockchain
-│   ├── core/
-│   │   ├── config.py          # Configuración de la aplicación
-│   │   └── security.py        # JWT, hashing de contraseñas
-│   ├── db/
-│   │   ├── database.py        # Conexión a la base de datos
-│   │   └── models.py          # Modelos SQLAlchemy (User, Message, Contact)
-│   ├── schemas/
-│   │   ├── auth.py            # Schemas de autenticación
-│   │   ├── chat.py            # Schemas de mensajes
-│   │   └── user.py            # Schemas de usuario
-│   ├── services/
-│   │   ├── blockchain.py      # Servicio de integración Web3.py
-│   │   └── websocket.py       # Gestor de conexiones WebSocket
-│   └── main.py                # Punto de entrada de FastAPI
-├── contracts/
-│   ├── Notary.sol             # Smart contract para notarización
+├── app/                       # Backend (FastAPI)
+│   ├── api/endpoints/         # REST & WebSocket endpoints
+│   ├── core/                  # Config & Security
+│   ├── db/                    # Models & Database
+│   ├── schemas/               # Pydantic schemas
+│   ├── services/              # Business logic
+│   └── main.py               # Entry point
+├── frontend/                  # Frontend (React + Vite)
+│   ├── src/
+│   │   ├── components/       # UI components
+│   │   ├── contexts/         # React contexts
+│   │   ├── pages/           # Page components
+│   │   ├── services/        # API & WebSocket
+│   │   ├── utils/           # E2EE crypto utilities
+│   │   └── App.jsx          # Main component
+│   ├── package.json
+│   └── vite.config.js
+├── contracts/                 # Smart contracts (Solidity)
+│   ├── Notary.sol
 │   └── scripts/
-│       ├── deploy.py          # Script de despliegue
-│       └── interact.py        # Script de interacción con el contrato
-├── tests/                     # Tests unitarios y de integración
-├── alembic/                   # Migraciones de base de datos
-├── requirements.txt           # Dependencias de Python
-├── .env.example              # Variables de entorno de ejemplo
-└── README.md
+├── docs/                      # Documentation
+├── tests/                     # Tests
+└── Docker & Config files
 ```
 
 ## Tecnologías
@@ -48,9 +40,16 @@ Blockchain/
 - JWT - Autenticación con tokens
 - WebSockets - Comunicación en tiempo real
 
+**Frontend:**
+- React 18 - UI library
+- Vite - Build tool
+- TailwindCSS - Utility-first CSS
+- libsodium - E2EE encryption (X25519-XSalsa20-Poly1305)
+- React Router - Client-side routing
+
 **Blockchain:**
 - Solidity - Smart contract para notarización
-- Hardhat/Remix - Desarrollo y despliegue
+- Hardhat - Development framework
 - Testnet Sepolia - Red de pruebas
 
 **Base de Datos:**
@@ -226,7 +225,26 @@ curl -X GET http://localhost:8000/api/verify/{message_id} \
 - [x] Semana 1: Backend base + Smart Contract
 - [x] Semana 2: WebSockets + Integración Web3
 - [x] Semana 3: Integración completa + Pruebas E2E
-- [ ] Semana 4: Frontend React + Despliegue
+- [x] Semana 4: Frontend React + Deployment config
+
+## Quick Start
+
+See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup guide.
+
+**TL;DR:**
+```bash
+# Backend
+cp .env.example .env
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+python init_db.py
+./start.sh
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
+```
 
 ## Licencia
 
