@@ -13,11 +13,13 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema for user registration"""
     password: str = Field(..., min_length=8, max_length=100)
+    public_key: str | None = None  # Optional: public key for E2EE
 
 
 class UserResponse(UserBase):
     """Schema for user response"""
     id: int
+    public_key: str | None = None
     created_at: datetime
 
     class Config:

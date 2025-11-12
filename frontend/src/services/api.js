@@ -37,8 +37,12 @@ api.interceptors.response.use(
 
 // Auth endpoints
 export const authAPI = {
-  register: async (username, password) => {
-    const response = await api.post('/auth/register', { username, password });
+  register: async (username, password, publicKey) => {
+    const response = await api.post('/auth/register', {
+      username,
+      password,
+      public_key: publicKey
+    });
     return response.data;
   },
 
@@ -58,6 +62,11 @@ export const authAPI = {
 
   getCurrentUser: async () => {
     const response = await api.get('/auth/me');
+    return response.data;
+  },
+
+  updatePublicKey: async (publicKey) => {
+    const response = await api.patch('/auth/me/update-key', { public_key: publicKey });
     return response.data;
   },
 };

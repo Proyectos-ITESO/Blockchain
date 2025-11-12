@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, oauth2_scheme
 from app.db.database import get_db
 from app.db.models import User
 from app.schemas.auth import Token
@@ -33,7 +33,8 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
         username=user_data.username,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        public_key=user_data.public_key  # Save public key
     )
 
     db.add(new_user)
@@ -73,7 +74,7 @@ def login(
 
 
 @router.get("/me", response_model=UserResponse)
-def get_current_user_info(
+async def get_current_user_info(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
@@ -81,7 +82,26 @@ def get_current_user_info(
     Get current user information
     """
     from app.api.deps import get_current_user
-    from app.core.security import oauth2_scheme
 
-    current_user = get_current_user(token, db)
+    current_user = await get_current_user(token, db)
     return current_user
+
+
+@router.patch("/me/update-key")
+async def update_public_key(
+    public_key: str,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    """
+    Update the user's public key (for existing users)
+    """
+    from app.api.deps import get_current_user
+
+    current_user = await get_current_user(token, db)
+
+    # Update user's public key
+    current_user.public_key = public_key
+    db.commit()
+
+    return {"message": "Public key updated successfully"}

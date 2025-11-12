@@ -66,17 +66,40 @@ export function AuthProvider({ children }) {
       const userData = await authAPI.getCurrentUser();
       setUser(userData);
 
-      // Load or generate keypair
-      let userKeypair = loadKeypair();
+      // Check if user has public key in database
+      if (!userData.public_key) {
+        console.log("User doesn't have public key in database, generating...");
 
-      if (!userKeypair) {
-        console.log('Generating new keypair for user');
-        const newKeypair = await generateKeyPair();
-        saveKeypair(newKeypair);
-        userKeypair = loadKeypair();
+        // Load or generate keypair
+        let existingKeypair = loadKeypair();
+
+        if (!existingKeypair) {
+          console.log('Generating new keypair for user');
+          const newKeypair = generateKeyPair();
+          saveKeypair(newKeypair);
+          existingKeypair = loadKeypair();
+        }
+
+        // Update public key in database
+        await authAPI.updatePublicKey(existingKeypair.publicKeyStr);
+        console.log("Public key saved to database");
+
+        setKeypair(existingKeypair);
+      } else {
+        console.log("User has public key in database:", userData.public_key.substring(0, 20) + "...");
+
+        // Load or generate local keypair
+        let existingKeypair = loadKeypair();
+
+        if (!existingKeypair) {
+          console.log('Generating local keypair for existing user');
+          const newKeypair = generateKeyPair();
+          saveKeypair(newKeypair);
+          existingKeypair = loadKeypair();
+        }
+
+        setKeypair(existingKeypair);
       }
-
-      setKeypair(userKeypair);
 
       // Connect to WebSocket
       await wsService.connect(access_token);
@@ -96,12 +119,12 @@ export function AuthProvider({ children }) {
       setError(null);
       setLoading(true);
 
-      // Register user
-      await authAPI.register(username, password);
-
-      // Generate keypair
-      const newKeypair = await generateKeyPair();
+      // Generate keypair BEFORE registration
+      const newKeypair = generateKeyPair();
       const savedKeypair = saveKeypair(newKeypair);
+
+      // Register user with public key
+      await authAPI.register(username, password, savedKeypair.publicKey);
 
       // Auto-login after registration
       await login(username, password);

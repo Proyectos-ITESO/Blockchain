@@ -84,6 +84,16 @@ export function ChatProvider({ children }) {
       setLoading(true);
       const contactList = await chatAPI.getContacts();
       setContacts(contactList);
+
+      // Automatically save public keys of contacts
+      contactList.forEach(contact => {
+        if (contact.public_key) {
+          console.log(`Saving public key for user ${contact.username} (${contact.id})`);
+          saveContactPublicKey(contact.id, contact.public_key);
+        } else {
+          console.warn(`No public key found for user ${contact.username} (${contact.id})`);
+        }
+      });
     } catch (error) {
       console.error('Failed to load contacts:', error);
     } finally {

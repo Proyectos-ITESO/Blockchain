@@ -29,10 +29,10 @@ class WebSocketService {
     this.isConnecting = true;
 
     return new Promise((resolve, reject) => {
-      const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+      const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/';
       const url = `${WS_URL}?token=${token}`;
 
-      console.log('Connecting to WebSocket...');
+      console.log('Connecting to WebSocket:', url);
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {

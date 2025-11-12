@@ -1,34 +1,23 @@
 /**
- * End-to-End Encryption utilities using libsodium
+ * End-to-End Encryption utilities using TweetNaCl
  *
- * Uses X25519-XSalsa20-Poly1305 for encryption
+ * Uses X25519-XSalsa20-Poly1305 for encryption (same as libsodium)
  * SHA-256 for message hashing
  */
 
-import sodium from 'libsodium-wrappers';
-
-// Initialize sodium
-let sodiumReady = false;
-
-export async function initSodium() {
-  if (!sodiumReady) {
-    await sodium.ready;
-    sodiumReady = true;
-  }
-  return sodium;
-}
+import nacl from 'tweetnacl';
+import { encodeBase64, decodeBase64, encodeUTF8, decodeUTF8 } from 'tweetnacl-util';
 
 /**
  * Generate a new keypair for a user
  * Returns: { publicKey: Uint8Array, privateKey: Uint8Array }
  */
-export async function generateKeyPair() {
-  await initSodium();
-  const keyPair = sodium.crypto_box_keypair();
+export function generateKeyPair() {
+  const keyPair = nacl.box.keyPair();
 
   return {
     publicKey: keyPair.publicKey,
-    privateKey: keyPair.privateKey,
+    privateKey: keyPair.secretKey,
   };
 }
 
@@ -36,14 +25,14 @@ export async function generateKeyPair() {
  * Convert Uint8Array to base64 string for storage/transmission
  */
 export function keyToString(key) {
-  return sodium.to_base64(key, sodium.base64_variants.ORIGINAL);
+  return encodeBase64(key);
 }
 
 /**
  * Convert base64 string back to Uint8Array
  */
 export function stringToKey(keyString) {
-  return sodium.from_base64(keyString, sodium.base64_variants.ORIGINAL);
+  return decodeBase64(keyString);
 }
 
 /**
@@ -54,13 +43,11 @@ export function stringToKey(keyString) {
  * @param {Uint8Array} senderPrivateKey - Sender's private key
  * @returns {string} - Base64 encoded encrypted message
  */
-export async function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
-  await initSodium();
+export function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
+  const messageBytes = encodeUTF8(message);
+  const nonce = nacl.randomBytes(nacl.box.nonceLength);
 
-  const messageBytes = sodium.from_string(message);
-  const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-
-  const ciphertext = sodium.crypto_box_easy(
+  const ciphertext = nacl.box(
     messageBytes,
     nonce,
     recipientPublicKey,
@@ -72,7 +59,7 @@ export async function encryptMessage(message, recipientPublicKey, senderPrivateK
   combined.set(nonce);
   combined.set(ciphertext, nonce.length);
 
-  return keyToString(combined);
+  return encodeBase64(combined);
 }
 
 /**
@@ -83,24 +70,26 @@ export async function encryptMessage(message, recipientPublicKey, senderPrivateK
  * @param {Uint8Array} recipientPrivateKey - Recipient's private key
  * @returns {string} - Decrypted plaintext message
  */
-export async function decryptMessage(encryptedMessage, senderPublicKey, recipientPrivateKey) {
-  await initSodium();
-
+export function decryptMessage(encryptedMessage, senderPublicKey, recipientPrivateKey) {
   try {
-    const combined = stringToKey(encryptedMessage);
+    const combined = decodeBase64(encryptedMessage);
 
     // Extract nonce and ciphertext
-    const nonce = combined.slice(0, sodium.crypto_box_NONCEBYTES);
-    const ciphertext = combined.slice(sodium.crypto_box_NONCEBYTES);
+    const nonce = combined.slice(0, nacl.box.nonceLength);
+    const ciphertext = combined.slice(nacl.box.nonceLength);
 
-    const decrypted = sodium.crypto_box_open_easy(
+    const decrypted = nacl.box.open(
       ciphertext,
       nonce,
       senderPublicKey,
       recipientPrivateKey
     );
 
-    return sodium.to_string(decrypted);
+    if (!decrypted) {
+      throw new Error('Decryption failed');
+    }
+
+    return decodeUTF8(decrypted);
   } catch (error) {
     console.error('Decryption failed:', error);
     throw new Error('Failed to decrypt message');
@@ -108,19 +97,19 @@ export async function decryptMessage(encryptedMessage, senderPublicKey, recipien
 }
 
 /**
- * Calculate SHA-256 hash of a message
+ * Calculate SHA-256 hash of a message using Web Crypto API
  * Returns hex string with 0x prefix for blockchain
  *
  * @param {string} message - Message to hash
- * @returns {string} - Hex hash with 0x prefix
+ * @returns {Promise<string>} - Hex hash with 0x prefix
  */
 export async function hashMessage(message) {
-  await initSodium();
+  const messageBytes = encodeUTF8(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', messageBytes);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-  const messageBytes = sodium.from_string(message);
-  const hash = sodium.crypto_hash_sha256(messageBytes);
-
-  return '0x' + sodium.to_hex(hash);
+  return '0x' + hashHex;
 }
 
 /**

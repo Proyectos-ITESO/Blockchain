@@ -21,18 +21,31 @@ async def get_contacts(
 ):
     """
     Get list of user's contacts
-    Returns users with whom the current user has exchanged messages
+    Returns users from the Contact table plus users with message history
     """
-    # Find all users who have exchanged messages with current user
-    contacts_query = db.query(User).join(
+    # Get explicitly added contacts
+    added_contacts = db.query(User).join(
+        Contact,
+        Contact.contact_id == User.id
+    ).filter(Contact.user_id == current_user.id).all()
+
+    # Get users with message history
+    message_contacts = db.query(User).join(
         Message,
         or_(
             and_(Message.sender_id == User.id, Message.receiver_id == current_user.id),
             and_(Message.receiver_id == User.id, Message.sender_id == current_user.id)
         )
-    ).filter(User.id != current_user.id).distinct()
+    ).filter(User.id != current_user.id).distinct().all()
 
-    contacts = contacts_query.all()
+    # Combine and deduplicate
+    contact_ids = set()
+    contacts = []
+
+    for contact in added_contacts + message_contacts:
+        if contact.id not in contact_ids:
+            contact_ids.add(contact.id)
+            contacts.append(contact)
 
     return contacts
 

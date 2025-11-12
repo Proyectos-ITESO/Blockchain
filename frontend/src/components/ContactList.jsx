@@ -28,12 +28,15 @@ export default function ContactList() {
 
   const handleAddContact = async (userId) => {
     try {
+      console.log('Adding contact with ID:', userId);
       setAddingContact(userId);
       await addContact(userId);
+      console.log('Contact added successfully');
       setSearchQuery('');
       setShowSearch(false);
       setSearchResults([]);
     } catch (error) {
+      console.error('Failed to add contact:', error);
       alert('Failed to add contact: ' + error.message);
     } finally {
       setAddingContact(null);
