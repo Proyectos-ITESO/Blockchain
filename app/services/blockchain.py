@@ -135,8 +135,8 @@ class BlockchainService:
                 logger.warning(f"Hash {message_hash[:10]}... already registered")
                 return None
 
-            # Get nonce
-            nonce = self.w3.eth.get_transaction_count(self.account.address)
+            # Get nonce (including pending transactions)
+            nonce = self.w3.eth.get_transaction_count(self.account.address, 'pending')
 
             # Build transaction
             transaction = self.contract.functions.registerHash(message_hash).build_transaction({

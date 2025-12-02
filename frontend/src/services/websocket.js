@@ -75,7 +75,11 @@ class WebSocketService {
 
           // Emit event based on message type
           this.emit(data.type, data);
-          this.emit('message', data);
+
+          // Only emit generic 'message' if type is NOT 'message' to avoid duplicates
+          if (data.type !== 'message') {
+            this.emit('message', data);
+          }
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
         }

@@ -109,6 +109,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     # Validate message structure
                     ws_message = WebSocketMessage(**message_data)
+                    
+                    logger.info(f"Received message hash: {ws_message.message_hash}")
 
                     # Get sender and receiver
                     sender = user

@@ -39,6 +39,7 @@ class ContactResponse(BaseModel):
     """Schema for contact response"""
     id: int
     username: str
+    public_key: str | None = None
     created_at: datetime
 
     class Config:

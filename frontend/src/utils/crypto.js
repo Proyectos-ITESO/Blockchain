@@ -44,8 +44,16 @@ export function stringToKey(keyString) {
  * @returns {string} - Base64 encoded encrypted message
  */
 export function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
-  const messageBytes = encodeUTF8(message);
+  const messageBytes = new TextEncoder().encode(message);
   const nonce = nacl.randomBytes(nacl.box.nonceLength);
+
+  console.log('DEBUG: encryptMessage', {
+    messageType: typeof message,
+    messageBytesType: messageBytes.constructor.name,
+    nonceType: nonce.constructor.name,
+    recipientKeyType: recipientPublicKey?.constructor?.name,
+    senderKeyType: senderPrivateKey?.constructor?.name,
+  });
 
   const ciphertext = nacl.box(
     messageBytes,
@@ -89,7 +97,7 @@ export function decryptMessage(encryptedMessage, senderPublicKey, recipientPriva
       throw new Error('Decryption failed');
     }
 
-    return decodeUTF8(decrypted);
+    return new TextDecoder().decode(decrypted);
   } catch (error) {
     console.error('Decryption failed:', error);
     throw new Error('Failed to decrypt message');
@@ -104,7 +112,7 @@ export function decryptMessage(encryptedMessage, senderPublicKey, recipientPriva
  * @returns {Promise<string>} - Hex hash with 0x prefix
  */
 export async function hashMessage(message) {
-  const messageBytes = encodeUTF8(message);
+  const messageBytes = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', messageBytes);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');

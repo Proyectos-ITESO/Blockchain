@@ -13,6 +13,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Configure logging
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,

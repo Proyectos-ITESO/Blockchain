@@ -216,10 +216,17 @@ export function ChatProvider({ children }) {
   };
 
   const addMessage = (contactId, message) => {
-    setMessages((prev) => ({
-      ...prev,
-      [contactId]: [...(prev[contactId] || []), message],
-    }));
+    setMessages((prev) => {
+      const currentMessages = prev[contactId] || [];
+      // Check if message already exists
+      if (currentMessages.some(m => m.id === message.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [contactId]: [...currentMessages, message],
+      };
+    });
   };
 
   const searchUsers = async (query) => {
