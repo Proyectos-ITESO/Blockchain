@@ -98,6 +98,13 @@ export function AuthProvider({ children }) {
           existingKeypair = loadKeypair();
         }
 
+        // Check if local key matches database key
+        if (existingKeypair.publicKeyStr !== userData.public_key) {
+          console.log('Local key differs from database key. Updating database...');
+          await authAPI.updatePublicKey(existingKeypair.publicKeyStr);
+          console.log('Database public key updated');
+        }
+
         setKeypair(existingKeypair);
       }
 
@@ -106,7 +113,21 @@ export function AuthProvider({ children }) {
 
       return userData;
     } catch (err) {
-      const message = err.response?.data?.detail || 'Login failed';
+      console.error('Login error:', err);
+      let message = 'Login failed';
+
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        if (typeof detail === 'string') {
+          message = detail;
+        } else if (Array.isArray(detail)) {
+          // Handle Pydantic validation errors
+          message = detail.map(e => e.msg).join(', ');
+        } else if (typeof detail === 'object') {
+          message = JSON.stringify(detail);
+        }
+      }
+
       setError(message);
       throw new Error(message);
     } finally {

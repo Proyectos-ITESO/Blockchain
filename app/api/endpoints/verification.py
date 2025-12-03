@@ -46,6 +46,17 @@ async def verify_message(
     try:
         is_verified = blockchain_service.verify_hash(message.message_hash)
 
+        # If verified but we don't have the tx_hash, try to find it from another message with same hash
+        if is_verified and not message.blockchain_tx_hash:
+            existing_msg = db.query(Message).filter(
+                Message.message_hash == message.message_hash,
+                Message.blockchain_tx_hash.isnot(None)
+            ).first()
+            
+            if existing_msg:
+                message.blockchain_tx_hash = existing_msg.blockchain_tx_hash
+                db.commit()
+
         return VerificationResponse(
             message_id=message.id,
             message_hash=message.message_hash,

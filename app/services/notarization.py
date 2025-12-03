@@ -54,6 +54,7 @@ def notarize_message_async(message_id: int, db: Session = None):
             db.commit()
 
             logger.info(f"Message {message_id} notarized successfully. Tx: {tx_hash}")
+            return tx_hash
 
             # Optional: Wait for transaction confirmation
             # This might take a while, so we do it asynchronously
@@ -63,6 +64,7 @@ def notarize_message_async(message_id: int, db: Session = None):
 
         else:
             logger.error(f"Failed to notarize message {message_id}")
+            return None
 
     except Exception as e:
         logger.error(f"Error notarizing message {message_id}: {e}")

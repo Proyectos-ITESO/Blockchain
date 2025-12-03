@@ -87,9 +87,14 @@ async def get_current_user_info(
     return current_user
 
 
+from pydantic import BaseModel
+
+class PublicKeyUpdate(BaseModel):
+    public_key: str
+
 @router.patch("/me/update-key")
 async def update_public_key(
-    public_key: str,
+    key_data: PublicKeyUpdate,
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
@@ -101,7 +106,7 @@ async def update_public_key(
     current_user = await get_current_user(token, db)
 
     # Update user's public key
-    current_user.public_key = public_key
+    current_user.public_key = key_data.public_key
     db.commit()
 
     return {"message": "Public key updated successfully"}

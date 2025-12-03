@@ -104,19 +104,17 @@ export function decryptMessage(encryptedMessage, senderPublicKey, recipientPriva
   }
 }
 
+import { sha256 } from 'js-sha256';
+
 /**
- * Calculate SHA-256 hash of a message using Web Crypto API
+ * Calculate SHA-256 hash of a message using js-sha256
  * Returns hex string with 0x prefix for blockchain
  *
  * @param {string} message - Message to hash
  * @returns {Promise<string>} - Hex hash with 0x prefix
  */
 export async function hashMessage(message) {
-  const messageBytes = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', messageBytes);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
+  const hashHex = sha256(message);
   return '0x' + hashHex;
 }
 

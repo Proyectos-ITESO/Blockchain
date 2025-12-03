@@ -12,6 +12,14 @@ import { verificationAPI } from '../services/api';
 function MessageBubble({ message, isOwn }) {
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(message.blockchainTxHash ? true : null);
+  const [txHash, setTxHash] = useState(message.blockchainTxHash);
+
+  useEffect(() => {
+    if (message.blockchainTxHash) {
+      setTxHash(message.blockchainTxHash);
+      setVerified(true);
+    }
+  }, [message.blockchainTxHash]);
 
   const handleVerify = async () => {
     if (!message.id || typeof message.id === 'string') return; // Skip temp messages
@@ -19,7 +27,13 @@ function MessageBubble({ message, isOwn }) {
     try {
       setVerifying(true);
       const result = await verificationAPI.verifyMessage(message.id);
+      console.log('Verification result:', result);
       setVerified(result.verified);
+      if (result.blockchain_tx_hash) {
+        setTxHash(result.blockchain_tx_hash);
+      } else {
+        console.warn('Verified but no tx hash returned');
+      }
     } catch (error) {
       console.error('Verification failed:', error);
       setVerified(false);
@@ -32,11 +46,10 @@ function MessageBubble({ message, isOwn }) {
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
       <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${isOwn ? 'order-2' : 'order-1'}`}>
         <div
-          className={`rounded-2xl px-4 py-2 ${
-            isOwn
-              ? 'bg-blue-600 text-white rounded-br-none'
-              : 'bg-gray-200 text-gray-900 rounded-bl-none'
-          }`}
+          className={`rounded-2xl px-4 py-2 ${isOwn
+            ? 'bg-blue-600 text-white rounded-br-none'
+            : 'bg-gray-200 text-gray-900 rounded-bl-none'
+            }`}
         >
           {!message.decrypted && (
             <div className="flex items-center text-xs mb-1 opacity-75">
@@ -50,28 +63,38 @@ function MessageBubble({ message, isOwn }) {
             <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
 
             {message.decrypted && (
-              <button
-                onClick={handleVerify}
-                disabled={verifying || verified === true}
-                className="ml-2 hover:opacity-80 transition-opacity"
-                title={
-                  verified === true
-                    ? 'Verified on blockchain'
-                    : verified === false
-                    ? 'Not verified'
-                    : 'Click to verify'
-                }
-              >
-                {verifying ? (
-                  <Shield className="w-3 h-3 animate-pulse" />
-                ) : verified === true ? (
-                  <ShieldCheck className="w-3 h-3" />
-                ) : verified === false ? (
-                  <ShieldAlert className="w-3 h-3" />
+              <div className="flex items-center">
+                {verified === true && txHash ? (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`ml-2 hover:opacity-80 transition-opacity ${isOwn ? 'text-green-300' : 'text-green-600'}`}
+                    title="View on Etherscan"
+                  >
+                    <ShieldCheck className="w-3 h-3" strokeWidth={3} />
+                  </a>
                 ) : (
-                  <Shield className="w-3 h-3" />
+                  <button
+                    onClick={handleVerify}
+                    disabled={verifying || verified === true}
+                    className="ml-2 hover:opacity-80 transition-opacity"
+                    title={
+                      verified === false
+                        ? 'Not verified'
+                        : 'Click to verify'
+                    }
+                  >
+                    {verifying ? (
+                      <Shield className="w-3 h-3 animate-pulse" />
+                    ) : verified === false ? (
+                      <ShieldAlert className="w-3 h-3" />
+                    ) : (
+                      <Shield className="w-3 h-3" />
+                    )}
+                  </button>
                 )}
-              </button>
+              </div>
             )}
           </div>
         </div>
@@ -128,7 +151,7 @@ export default function MessageWindow() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-white h-full">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center">

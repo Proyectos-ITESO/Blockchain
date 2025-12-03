@@ -12,12 +12,12 @@ function ChatLayout() {
   return (
     <div className="h-screen flex overflow-hidden bg-gray-50">
       {/* Sidebar */}
-      <div className="w-80 flex-shrink-0">
+      <div className="w-80 flex-shrink-0 h-full overflow-hidden">
         <ContactList />
       </div>
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         <MessageWindow />
       </div>
 

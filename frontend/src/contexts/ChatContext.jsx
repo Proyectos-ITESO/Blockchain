@@ -72,6 +72,59 @@ export function ChatProvider({ children }) {
         } catch (error) {
           console.error('Failed to decrypt message:', error);
         }
+      } else if (data.type === 'notarization_success') {
+        console.log('Received notarization update:', data);
+
+        // Update message in state
+        setMessages((prev) => {
+          const newMessages = { ...prev };
+
+          // Find which contact this message belongs to
+          for (const contactId in newMessages) {
+            const msgIndex = newMessages[contactId].findIndex(m => m.id === data.message_id);
+
+            if (msgIndex !== -1) {
+              const updatedMsgs = [...newMessages[contactId]];
+              updatedMsgs[msgIndex] = {
+                ...updatedMsgs[msgIndex],
+                blockchainTxHash: data.blockchain_tx_hash,
+                verified: true
+              };
+              newMessages[contactId] = updatedMsgs;
+              break; // Found it
+            }
+          }
+          return newMessages;
+        });
+      } else if (data.type === 'sent') {
+        // Update temporary ID with real ID
+        setMessages((prev) => {
+          const contactId = data.to_user_id;
+          if (!prev[contactId]) return prev;
+
+          const newMessages = { ...prev };
+          const msgs = [...newMessages[contactId]];
+
+          // Find the temporary message (usually the last one sent by us)
+          // We look for a message with 'sending: true' and a temp ID
+          const tempMsgIndex = msgs.findIndex(m =>
+            m.senderId === user.id &&
+            typeof m.id === 'string' &&
+            m.id.startsWith('temp-')
+          );
+
+          if (tempMsgIndex !== -1) {
+            msgs[tempMsgIndex] = {
+              ...msgs[tempMsgIndex],
+              id: data.message_id, // Update to real ID
+              timestamp: data.timestamp,
+              sending: false
+            };
+            newMessages[contactId] = msgs;
+          }
+
+          return newMessages;
+        });
       }
     };
 

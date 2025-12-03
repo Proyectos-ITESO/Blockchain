@@ -46,7 +46,7 @@ def verify_websocket_token(token: str, db: Session) -> User:
         return None
 
 
-@router.websocket("/")
+@router.websocket("")
 async def websocket_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for real-time chat
@@ -140,9 +140,32 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.info(f"Message saved: {new_message.id} from {sender.id} to {receiver_id}")
 
                     # Trigger asynchronous blockchain notarization
+                    # Trigger asynchronous blockchain notarization with notification
                     from app.services.notarization import notarize_message_async
                     import asyncio
-                    asyncio.create_task(asyncio.to_thread(notarize_message_async, new_message.id, None))
+
+                    async def process_notarization_and_notify(msg_id, sender_id, receiver_id):
+                        # Run blocking notarization in thread
+                        tx_hash = await asyncio.to_thread(notarize_message_async, msg_id, None)
+                        
+                        if tx_hash:
+                            logger.info(f"Sending notarization notification for message {msg_id}")
+                            notification = {
+                                "type": "notarization_success",
+                                "message_id": msg_id,
+                                "blockchain_tx_hash": tx_hash,
+                                "verified": True
+                            }
+                            
+                            # Notify sender
+                            if manager.is_user_online(sender_id):
+                                await manager.send_personal_message(notification, sender_id)
+                                
+                            # Notify receiver
+                            if manager.is_user_online(receiver_id):
+                                await manager.send_personal_message(notification, receiver_id)
+
+                    asyncio.create_task(process_notarization_and_notify(new_message.id, sender.id, receiver_id))
 
                     # Prepare message for delivery
                     delivery_message = {
